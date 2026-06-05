@@ -117,6 +117,7 @@ canvas{max-width:100%}
 
 <script>
 const SB_URL="https://nvgkhdrrxqdgxktfkioa.supabase.co", SB_TABLE="nextgen_respuestas";
+const SB_PUB="sb_publishable_d1RrtE7S-9a8e8mGKRRjxQ_4HU_nkDl";
 const DIMS=[
   {k:"d_ecosistema",cat:"Ecosistema Digital",c:"#00d4ff"},
   {k:"d_ia",cat:"Inteligencia Artificial",c:"#7b2fff"},
@@ -133,26 +134,22 @@ const QLAB=["Herramientas digitales","Presencia en redes","Procesos automatizado
 const $=id=>document.getElementById(id);
 const hexA=(h,a)=>{const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;};
 
-// GATE
-const saved=localStorage.getItem("nextgen_secret");
-if(saved){$("secret").value=saved;}
-$("enter").onclick=()=>load($("secret").value.trim());
-$("secret").addEventListener("keydown",e=>{if(e.key==="Enter")$("enter").click();});
+// Acceso directo: lee con la clave pública (requiere policy SELECT para anon)
+window.addEventListener("DOMContentLoaded",()=>load(SB_PUB));
 
 let DATA=[];
 async function load(secret){
-  if(!secret){$("gerr").textContent="Pega tu clave secreta.";return;}
-  $("gerr").textContent="Cargando…";
+  if(!secret){return;}
+  $("gerr").textContent="Cargando resultados…";
   try{
     const r=await fetch(`${SB_URL}/rest/v1/${SB_TABLE}?select=*&order=created_at.desc`,{headers:{"apikey":secret,"Authorization":"Bearer "+secret}});
     if(!r.ok){const t=await r.text();$("gerr").textContent="Error "+r.status+": "+t.slice(0,120);return;}
     DATA=await r.json();
-    localStorage.setItem("nextgen_secret",secret);
     $("gate").style.display="none";$("dash").style.display="block";$("actions").style.display="flex";
     render();
   }catch(e){$("gerr").textContent="No se pudo conectar: "+e.message;}
 }
-$("reload").onclick=()=>load(localStorage.getItem("nextgen_secret"));
+$("reload").onclick=()=>load(SB_PUB);
 $("csv").onclick=exportCSV;
 
 function render(){
@@ -236,3 +233,4 @@ function exportCSV(){
 </script>
 </body>
 </html>
+                                                                                                                                                      
