@@ -125,7 +125,6 @@ const DIMS=[
   {k:"d_estrategia",cat:"Estrategia Comercial",c:"#10b981"},
   {k:"d_mentalidad",cat:"Mentalidad y Crecimiento",c:"#ec4899"}
 ];
-// etiquetas cortas de las 25 preguntas (para "mayores vacíos")
 const QLAB=["Herramientas digitales","Presencia en redes","Procesos automatizados","Ecosistema Google","Comodidad con lo nuevo",
 "Frecuencia de uso de IA","Para qué usa IA","Nº de herramientas IA","Calidad de prompts","Investiga con IA",
 "Propuesta de valor","Identidad de marca","Crea contenido","IA para marca/visual","Diferenciación",
@@ -146,7 +145,7 @@ async function loadWithPass(pw){
   $("gerr").textContent="Entrando…";
   try{
     const r=await fetch(`${SB_URL}/rest/v1/rpc/get_respuestas`,{method:"POST",headers:{"apikey":SB_PUB,"Authorization":"Bearer "+SB_PUB,"Content-Type":"application/json"},body:JSON.stringify({pass:pw})});
-    if(!r.ok){const t=await r.text(); $("gerr").textContent = (t.includes("unauthorized")||r.status===401||r.status===400)?"Contraseña incorrecta.":("Error "+r.status+": "+t.slice(0,100)); localStorage.removeItem("panel_pw"); return;}
+    if(!r.ok){const t=await r.text(); $("gerr").textContent=(t.includes("unauthorized")||r.status===401||r.status===400)?"Contraseña incorrecta.":("Error "+r.status+": "+t.slice(0,100)); localStorage.removeItem("panel_pw"); return;}
     DATA=await r.json();
     localStorage.setItem("panel_pw",pw);
     $("gate").style.display="none";$("dash").style.display="block";$("actions").style.display="flex";
@@ -158,7 +157,6 @@ $("csv").onclick=exportCSV;
 
 function render(){
   const n=DATA.length;
-  // KPIs
   const avg=n?Math.round(DATA.reduce((s,d)=>s+(d.total||0),0)/n):0;
   const lv={arranque:0,aceleracion:0,ecosistema:0};
   DATA.forEach(d=>{const t=d.total||0; if(t>=75)lv.ecosistema++;else if(t>=50)lv.aceleracion++;else lv.arranque++;});
@@ -170,31 +168,24 @@ function render(){
     <div class="kpi"><b style="color:#10b981">${lv.ecosistema}</b><span>Modo Ecosistema</span></div>`;
   $("cnt").textContent=n;
 
-  // dimension averages (cada dimensión sobre 20)
   const dimAvg={};
   DIMS.forEach(d=>{dimAvg[d.k]=n?DATA.reduce((s,r)=>s+(r[d.k]||0),0)/n:0;});
   const dw=$("dims");dw.innerHTML="";
   DIMS.forEach(d=>{const v=dimAvg[d.k],p=Math.round(v/20*100);
     dw.innerHTML+=`<div class="dim-row"><div class="dim-top"><span class="dim-name" style="color:${d.c}">${d.cat}</span><span>${v.toFixed(1)}/20 · ${p}%</span></div><div class="dim-bar"><div class="dim-fill" style="width:${p}%;background:linear-gradient(90deg,${hexA(d.c,.6)},${d.c})"></div></div></div>`;});
 
-  // levels distribution
   const lw=$("levels");const cfg=[["Modo Arranque",lv.arranque,"#ec4899"],["Modo Aceleración",lv.aceleracion,"#f59e0b"],["Modo Ecosistema",lv.ecosistema,"#10b981"]];
   lw.innerHTML="";cfg.forEach(([lab,c,col])=>{const p=n?Math.round(c/n*100):0;lw.innerHTML+=`<div class="lvlbar"><div class="lt"><span>${lab}</span><span>${c} · ${p}%</span></div><div class="bar"><div style="width:${p}%;background:${col}"></div></div></div>`;});
 
-  // gaps: average score per question (1..4) across responses
   const qsum=new Array(25).fill(0), qcnt=new Array(25).fill(0);
   DATA.forEach(r=>{(r.respuestas||[]).forEach(a=>{const i=(a.id||0)-1; if(i>=0&&i<25&&typeof a.score==="number"){qsum[i]+=a.score;qcnt[i]++;}});});
   const qavg=qsum.map((s,i)=>qcnt[i]?{i,v:s/qcnt[i]}:{i,v:null}).filter(o=>o.v!==null).sort((a,b)=>a.v-b.v).slice(0,6);
   const gw=$("gaps");gw.innerHTML = qavg.length? "" : "<li class='muted'>Aún sin datos suficientes.</li>";
   qavg.forEach(o=>{const pct=Math.round((o.v-1)/3*100);gw.innerHTML+=`<li><span>${o.i+1}. ${QLAB[o.i]}</span><span class="g-val" style="color:${pct<50?'#ec4899':pct<75?'#f59e0b':'#10b981'}">${o.v.toFixed(1)}/4</span></li>`;});
 
-  // calibration recommendation
   $("calib").innerHTML=calib(n,avg,dimAvg,lv,qavg);
-
-  // radar
   drawRadar(dimAvg);
 
-  // table
   const tb=$("tbody");tb.innerHTML="";
   DATA.forEach((d,idx)=>{
     const t=d.total||0,col=t>=75?"#10b981":t>=50?"#f59e0b":"#ec4899";
@@ -232,4 +223,8 @@ function exportCSV(){
   const head=["nombre","email","telefono","total","nivel","d_ecosistema","d_ia","d_marca","d_estrategia","d_mentalidad","fecha"];
   const rows=DATA.map(d=>[d.nombre,d.email,d.telefono,d.total,d.nivel,d.d_ecosistema,d.d_ia,d.d_marca,d.d_estrategia,d.d_mentalidad,d.created_at].map(v=>`"${(v??"").toString().replace(/"/g,'""')}"`).join(","));
   const csv=[head.join(","),...rows].join("\n");
-  const a=document.createElement("a");a.href=URL.createObje
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="diagnostico-ia-jovenes.csv";a.click();
+}
+</script>
+</body>
+</html>
